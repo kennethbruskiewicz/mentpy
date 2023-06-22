@@ -1,12 +1,12 @@
 # Author: Luis Mantilla
 # Github: BestQuark
 import numpy as np
-from mentpy.operators import PauliOp
 import networkx as nx
 from typing import Optional, List
 
-__all__ = ["GraphState", "entanglement_entropy"]
+from mentpy.operators import PauliOp
 
+__all__ = ["GraphState", "entanglement_entropy"]
 
 class GraphState(nx.Graph):
     """A graph state class that inherits from networkx.Graph.
@@ -63,6 +63,9 @@ class GraphState(nx.Graph):
             print(g.stabilizers())
         """
         return _get_stabilizers(self)
+
+    def copy(self, as_view=False):
+        return super().copy(as_view=as_view)
 
 
 def lc_reduce(graph: GraphState):
