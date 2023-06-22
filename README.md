@@ -61,4 +61,3 @@ We welcome contributions to `MentPy`! Please see our [contributing guidelines](.
 ## License
 
 `MentPy` is licensed under the [GNU General Public License v3.0](./LICENSE).
-

@@ -18,7 +18,7 @@ __all__ = ["MBQCircuit", "draw", "merge", "hstack", "vstack"]
 
 
 class MBQCircuit:
-    r"""The MBQCircuit class that deals with operations and manipulations of graph states
+    """The MBQCircuit class that deals with operations and manipulations of graph states
 
     Parameters
     ----------
@@ -56,12 +56,18 @@ class MBQCircuit:
         graph: GraphState,
         input_nodes: List[int] = [],
         output_nodes: List[int] = [],
-        measurements: Optional[dict[Ment]] = None,
+        measurements: Optional[dict[int, Ment | None]] = None,  # NOTE: int is node type
         default_measurement: Optional[Ment] = Ment("XY"),
+
+        # Callbacks
+        # TODO: remove callbacks from the constructor
+        # These appear to be here because you want to program a test that is affirmed/constructed conditionally
+        # Is this for performance reasons? Could this be done lazily or with memoizaton?
         flow: Optional[Callable] = None,
-        partial_order: Optional[callable] = None,
+        partial_order: Optional[Callable] = None,
         measurement_order: Optional[List[int]] = None,
         gflow: Optional[Callable] = None,
+
         relabel_indices: bool = True,
     ) -> None:
         """Initializes a graph state"""
@@ -74,6 +80,8 @@ class MBQCircuit:
             graph = nx.relabel_nodes(graph, mapping)
             input_nodes = [mapping[i] for i in input_nodes]
             output_nodes = [mapping[i] for i in output_nodes]
+
+            # TODO: should these be functions exposed to the user?
             if flow is not None:
                 flow = lambda x: mapping[flow(inv_mapping[x])]
             if partial_order is not None:
@@ -83,8 +91,9 @@ class MBQCircuit:
             if gflow is not None:
                 gflow = lambda x: mapping[
                     gflow(inv_mapping[x])
-                ]  # FIX THIS... gflow output is not a number
+                ]  # TODO: FIX THIS... gflow output is not a number
                 raise NotImplementedError
+
             if measurement_order is not None:
                 measurement_order = [mapping[i] for i in measurement_order]
             if measurements is not None:
@@ -206,7 +215,7 @@ class MBQCircuit:
             self._measurement_order = self.calculate_order()
 
     def __getitem__(self, key):
-        r"""Return the value of the measurement of the node with index key."""
+        """Return the value of the measurement of the node with index key."""
         try:
             return self._measurements[key]
         except KeyError:
