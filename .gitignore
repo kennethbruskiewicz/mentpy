@@ -132,3 +132,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Notes/scratchpad
+.notes/
+
+# Nix
+shell.nix
