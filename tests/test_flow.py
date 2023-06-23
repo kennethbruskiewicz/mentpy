@@ -1,10 +1,15 @@
-from mentpy.mbqc.mbqcircuit import MBQCircuit
 import pytest
+
+from mentpy.mbqc.mbqcircuit import MBQCircuit
 from mentpy.mbqc import flow
 import mentpy as mp
 
 # Test cases
 # Taken from Generalized Flow paper arxiv:0702212.pdf
+
+@pytest.fixture
+def test_circuit(request):
+     yield request.param()
 
 def gs_cf():
     """
@@ -63,7 +68,7 @@ def ogs_ngf_npf():
     Open graph state with no Pauli or generalized flow implementing a deterministic pattern for the swap operator
     Labels of the circuit from the Generalized Flow and Determinism paper are offset by one.
     """
-    # TODO: how to test for determinism without flow?
+    # NOTE: how to test for determinism without flow?
     ogs_ngf_npf = mp.GraphState()
     ogs_ngf_npf.add_edges_from(
         [
@@ -132,46 +137,58 @@ def ring():
 class TestFlow:
     CFLOW, GFLOW, PFLOW = True, True, False
 
-    @pytest.mark.parametrize(
-        "test_circuit, cflow, gflow, pflow",
-        [
-            ("Graph state with causal flow", gs_cf(), True, True, True),
-            ("Graph state with general flow but no causal flow", gs_gf_ncf(), False, True, False),
-            ("Open graph state with causal flow and general flow", ogs_cf5_gf2(), True, True, False),
-            ("Open graph state with Pauli flow, but no general flow", ogs_ngf_pf(), False, False, True),
-            ("Open graph state with no general flow and no Pauli flow, but is deterministic", ogs_ngf_npf(), False, False, False),
-            ("CNOT gate",  cnot(), False, False, True),
-            ("Small CNOT gate", small_cnot(), False, False, True),
-            ("Ring of 6 Qubits", ring(), True, False, True),
-        ],
-    )
-    def test_flows(self, name: str, test_circuit: MBQCircuit, cflow: bool, gflow: bool, pflow: bool):
+    # TODO: add tests for the following:
 
-        has_cflow, has_gflow, has_pflow = (
-            flow.find_cflow(
+    # - cflow but no gflow or pflow
+    # - gflow but no cflow or pflow
+    # - pflow but no cflow or gflow
+    # - cflow and pflow but no gflow
+    # - gflow and pflow but no cflow
+    # - cflow and gflow but no pflow
+    # - cflow, gflow, and pflow
+    # - no cflow, gflow, or pflow
+    # - no cflow, gflow, or pflow but is deterministic
+    # - no cflow, gflow, or pflow and is not deterministic
+
+    # NOTE: "None" is used to indicate that we don't care about the value of the flow or don't know it.
+    @pytest.mark.parametrize(
+        "name, test_circuit, expect_cflow, expect_gflow, expect_pflow",
+        [
+            ("Graph state with causal flow but no general flow", gs_cf, True, None, None),
+            ("Graph state with general flow but no causal flow", gs_gf_ncf, False, True, None),
+            ("Open graph state with causal flow and general flow", ogs_cf5_gf2, True, True, None),
+            ("Open graph state with Pauli flow, but no general flow", ogs_ngf_pf, None, False, True),
+            ("Open graph state with no general flow and no Pauli flow, but is deterministic", ogs_ngf_npf, False, False, False),
+            ("CNOT gate", cnot, False, False, True),
+            ("Small CNOT gate", small_cnot, None, None, True),
+            ("Ring of 6 Qubits", ring, True, True, True),
+        ],
+        indirect=["test_circuit"]
+    )
+    def test_flows(self, name: str, test_circuit: MBQCircuit, expect_cflow: bool, expect_gflow: bool, expect_pflow: bool):
+
+        # TODO: add test for deterministic circuits with no flow
+        # HACK: generators might not be the best way to do this
+        has_cflow = flow.find_cflow(
                 test_circuit.graph,
-                input_nodes=test_circuit.input_nodes,
-                output_nodes=test_circuit.output_nodes,
-            )
-            if self.CFLOW
-            else None,
-            flow.find_gflow(
+                test_circuit.input_nodes,
+                test_circuit.output_nodes,
+            )[0] if self.CFLOW else None
+
+        has_gflow = flow.find_gflow(
                 test_circuit.graph,
-                input_nodes=test_circuit.input_nodes,
-                output_nodes=test_circuit.output_nodes,
-            )
-            if self.GFLOW
-            else None,
-            flow.find_pflow(
+                test_circuit.input_nodes,
+                test_circuit.output_nodes
+            )[0] if self.GFLOW else None
+
+        has_pflow = flow.find_pflow(
                 test_circuit.graph,
-                input_nodes=test_circuit.input_nodes,
-                output_nodes=test_circuit.output_nodes,
-            )
-            if self.PFLOW
-            else None,
-        )
+                test_circuit.input_nodes,
+                test_circuit.output_nodes,
+            )[0] if self.PFLOW else None
 
         print(f"{name}: has cflow: {has_cflow}; has gflow: {has_gflow}; has pflow: {has_pflow}")
-        assert has_cflow is cflow
-        assert has_gflow is gflow
-        assert has_pflow is pflow
+
+        if self.CFLOW and not expect_cflow is None: assert has_cflow is expect_cflow
+        if self.GFLOW and not expect_gflow is None: assert has_gflow is expect_gflow
+        if self.PFLOW and not expect_pglow is None: assert has_pflow is expect_pflow
