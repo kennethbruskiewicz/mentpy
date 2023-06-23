@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from mentpy.operators import Ment, ControlMent, PauliOp
 from mentpy.mbqc.states.graphstate import GraphState
-from mentpy.mbqc.flow import find_gflow, find_cflow, find_flow, check_if_flow
+from mentpy.mbqc.flow import find_gflow, find_cflow, check_if_flow  # TODO: find_pflow
 
 __all__ = ["MBQCircuit", "draw", "merge", "hstack", "vstack"]
 
@@ -58,7 +58,6 @@ class MBQCircuit:
         output_nodes: List[int] = [],
         measurements: Optional[dict[int, Ment | None]] = None,  # NOTE: int is node type
         default_measurement: Optional[Ment] = Ment("XY"),
-
         # Callbacks
         # TODO: remove callbacks from the constructor
         # These appear to be here because you want to program a test that is affirmed/constructed conditionally
@@ -67,7 +66,6 @@ class MBQCircuit:
         partial_order: Optional[Callable] = None,
         measurement_order: Optional[List[int]] = None,
         gflow: Optional[Callable] = None,
-
         relabel_indices: bool = True,
     ) -> None:
         """Initializes a graph state"""
@@ -150,10 +148,9 @@ class MBQCircuit:
 
         if (flow is None) or (partial_order is None):
             # flow, partial_order, depth = find_cflow(graph, input_nodes, output_nodes)
-            flow, partial_order = find_flow(
+            _, flow, partial_order, depth = find_cflow(
                 graph, input_nodes, output_nodes
             )  # TODO: FIX find_cflow!!!!
-            depth = None
 
         elif (flow is not None) and (partial_order is not None):
             check_if_flow(graph, input_nodes, output_nodes, flow, partial_order)
@@ -163,7 +160,7 @@ class MBQCircuit:
 
         if gflow is None:
             if flow is None:
-                gflow, gpartial_order, depth = find_gflow(
+                _, gflow, gpartial_order, depth = find_gflow(
                     graph, input_nodes, output_nodes
                 )
             else:
